@@ -19,9 +19,15 @@ class AGReIDVid(object):
         self.subset = cfg.DATASETS.SUBSET
         self.split_train_json_path = osp.join(self.root, self.subset, 'split_train.json')
         
-        self.train_dir = '/path/to/your/train'
-        self.query_dir = '/path/to/your/case1_aerial_to_ground/query'
-        self.gallery_dir = '/path/to/your/case1_aerial_to_ground/gallery'
+        base_path = osp.abspath(osp.join(osp.dirname(__file__), '..', '..', '..', '..'))
+        eval_case = getattr(cfg.DATASETS, 'EVAL_CASE', 'case1')
+        self.train_dir = osp.join(base_path, 'train')
+        if eval_case == 'case2':
+            self.query_dir = osp.join(base_path, 'case2_ground_to_aerial', 'query')
+            self.gallery_dir = osp.join(base_path, 'case2_ground_to_aerial', 'gallery')
+        else:
+            self.query_dir = osp.join(base_path, 'case1_aerial_to_ground', 'query')
+            self.gallery_dir = osp.join(base_path, 'case1_aerial_to_ground', 'gallery')
         
         # Check if we should use direct loading
         self.use_direct_loading = self.query_dir is not None and self.gallery_dir is not None
@@ -175,7 +181,11 @@ class AGReIDVid(object):
                 
                 try:
                     image_name = os.path.basename(img_paths[0])
-                    camid = int(image_name.split("C")[1].split("E")[0])
+                    match = re.search(r'C(\d+)E', image_name)
+                    if match:
+                        camid = int(match.group(1))
+                    else:
+                        camid = int(image_name.split("C")[1].split("E")[0])
                 except Exception as e:
                     print(f"Error extracting camera ID from {img_paths[0]}: {e}")
                     camid = 0  # Default camera ID
